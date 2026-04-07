@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#0d2137" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Prayer Times" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Mawaqit – Islamic Prayer Times</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Amiri:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --midnight: #0a1628;
+      --deep: #0d2137;
+      --navy: #112b47;
+      --gold: #c8965a;
+      --gold-light: #e8b87a;
+      --gold-pale: #f5ddb0;
+      --teal: #1e6b6b;
+      --teal-light: #2a9090;
+      --cream: #f8f0e3;
+      --text-primary: #f0e6d3;
+      --text-muted: #8aabbb;
+      --prayer-bg: rgba(255,255,255,0.04);
+      --prayer-border: rgba(200,150,90,0.18);
+      --active-glow: rgba(200,150,90,0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--midnight);
+      color: var(--text-primary);
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* Background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(200,150,90,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(30,107,107,0.15) 0%, transparent 60%),
+        linear-gradient(180deg, #0a1628 0%, #0d2137 50%, #091520 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Geometric stars background */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle, rgba(200,150,90,0.5) 1px, transparent 1px),
+        radial-gradient(circle, rgba(200,150,90,0.3) 1px, transparent 1px);
+      background-size: 80px 80px, 130px 130px;
+      background-position: 0 0, 40px 40px;
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 430px;
+      margin: 0 auto;
+      padding: 0 0 100px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      padding: 48px 24px 24px;
+      position: relative;
+    }
+
+    .crescent {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px;
+      position: relative;
+    }
+
+    .crescent svg { width: 100%; height: 100%; filter: drop-shadow(0 0 12px rgba(200,150,90,0.6)); }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gold-light);
+      letter-spacing: 0.5px;
+      line-height: 1.2;
+    }
+
+    header h1 span {
+      display: block;
+      font-family: 'Amiri', serif;
+      font-size: 20px;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .hijri-date {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--gold);
+      opacity: 0.8;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── LOCATION BAR ── */
+    .location-bar {
+      margin: 0 16px 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--prayer-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .location-bar:hover { background: rgba(255,255,255,0.08); border-color: rgba(200,150,90,0.35); }
+
+    .location-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    .location-info { flex: 1; min-width: 0; }
+    .location-info .city { font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .location-info .coords { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .location-change {
+      font-size: 11px;
+      color: var(--gold);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    /* ── SEARCH MODAL ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,10,20,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 60px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--navy);
+      border: 1px solid var(--prayer-border);
+      border-radius: 20px;
+      width: calc(100% - 32px);
+      max-width: 400px;
+      padding: 24px;
+      transform: translateY(-20px);
+      transition: transform 0.25s;
+    }
+
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal h2 { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--gold-light); margin-bottom: 16px; }
+
+    .search-input-wrap { position: relative; margin-bottom: 12px; }
+    .search-input-wrap input {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--prayer-border);
+      border-radius: 12px;
+      padding: 12px 44px 12px 16px;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input-wrap input:focus { border-color: var(--gold); }
+    .search-input-wrap input::placeholder { color: var(--text-muted); }
+    .search-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--gold);
+      border: none;
+      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .search-results { max-height: 240px; overflow-y: auto; }
+    .search-result-item {
+      padding: 12px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .search-result-item:hover { background: rgba(200,150,90,0.1); }
+    .search-result-item .r-city { font-size: 14px; font-weight: 500; }
+    .search-result-item .r-country { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .btn-secondary {
+      flex: 1;
+      padding: 11px;
+      border-radius: 10px;
+      border: 1px solid var(--prayer-border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+
+    .btn-primary {
+      flex: 2;
+      padding: 11px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #c8965a, #e8b87a);
+      color: #0a1628;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* ── NEXT PRAYER CARD ── */
+    .next-prayer-card {
+      margin: 0 16px 20px;
+      background: linear-gradient(135deg, rgba(200,150,90,0.15) 0%, rgba(30,107,107,0.12) 100%);
+      border: 1px solid rgba(200,150,90,0.3);
+      border-radius: 20px;
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .next-prayer-card::before {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(200,150,90,0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .npc-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+    .npc-name { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--gold-light); }
+    .npc-arabic { font-family: 'Amiri', serif; font-size: 18px; color: var(--gold); opacity: 0.7; margin-top: 2px; }
+
+    .npc-countdown {
+      margin-top: 14px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .countdown-time {
+      font-size: 38px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .countdown-label { font-size: 13px; color: var(--text-muted); }
+
+    .npc-actual { margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+    .npc-actual span { color: var(--gold); font-weight: 500; }
+
+    /* ── PRAYER LIST ── */
+    .prayers-section { padding: 0 16px; }
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+
+    .prayer-card {
+      background: var(--prayer-bg);
+      border: 1px solid var(--prayer-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .prayer-card.active {
+      background: linear-gradient(135deg, rgba(200,150,90,0.12), rgba(30,107,107,0.08));
+      border-color: rgba(200,150,90,0.45);
+      box-shadow: 0 0 20px rgba(200,150,90,0.1);
+    }
+
+    .prayer-card.passed { opacity: 0.45; }
+
+    .prayer-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--prayer-border);
+      flex-shrink: 0;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .prayer-card.active .prayer-dot {
+      background: var(--gold);
+      box-shadow: 0 0 8px var(--gold);
+    }
+
+    .prayer-names { flex: 1; }
+    .prayer-name-en { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+    .prayer-name-ar { font-family: 'Amiri', serif; font-size: 14px; color: var(--text-muted); margin-top: 1px; }
+
+    .prayer-time-col { text-align: right; }
+    .prayer-time { font-size: 17px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .prayer-card.active .prayer-time { color: var(--gold-light); }
+
+    .alarm-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--prayer-border);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      color: var(--text-muted);
+    }
+
+    .alarm-btn.armed {
+      background: rgba(200,150,90,0.15);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    /* ── ALARM SETTINGS PANEL ── */
+    .alarm-panel {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      width: 100%;
+      max-width: 430px;
+      background: var(--navy);
+      border-top: 1px solid var(--prayer-border);
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px 48px;
+      z-index: 90;
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .alarm-panel.open { transform: translateX(-50%) translateY(0); }
+
+    .panel-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin: 0 auto 20px; }
+
+    .panel-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: var(--gold-light);
+      margin-bottom: 4px;
+    }
+
+    .panel-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 22px; }
+
+    .alarm-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .toggle-info .toggle-label { font-size: 14px; font-weight: 500; }
+    .toggle-info .toggle-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .toggle {
+      width: 46px;
+      height: 26px;
+      border-radius: 13px;
+      background: rgba(255,255,255,0.1);
+      position: relative;
+      cursor: pointer;
+      border: none;
+      transition: background 0.25s;
+      flex-shrink: 0;
+    }
+
+    .toggle.on { background: var(--gold); }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.25s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    .toggle.on::after { transform: translateX(20px); }
+
+    .minutes-row {
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .minutes-label { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+
+    .minutes-options { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .min-chip {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--prayer-border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .min-chip.selected {
+      background: rgba(200,150,90,0.15);
+      border-color: var(--gold);
+      color: var(--gold);
+      font-weight: 500;
+    }
+
+    .custom-min-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .custom-min-wrap input {
+      width: 70px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--prayer-border);
+      border-radius: 10px;
+      padding: 7px 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      text-align: center;
+    }
+
+    .custom-min-wrap input:focus { border-color: var(--gold); }
+    .custom-min-wrap span { font-size: 13px; color: var(--text-muted); }
+
+    .panel-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: rgba(13,33,55,0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--prayer-border);
+      display: flex;
+      padding: 10px 0 24px;
+      z-index: 80;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 0;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .nav-icon { font-size: 22px; }
+    .nav-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.3px; }
+    .nav-item.active .nav-label { color: var(--gold); }
+    .nav-item.active .nav-icon { filter: drop-shadow(0 0 4px rgba(200,150,90,0.6)); }
+
+    /* ── SETTINGS VIEW ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .settings-section {
+      margin: 0 16px 24px;
+    }
+
+    .settings-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    .settings-card {
+      background: var(--prayer-bg);
+      border: 1px solid var(--prayer-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+    }
+
+    .setting-row:last-child { border-bottom: none; }
+    .setting-row-info .s-label { font-size: 14px; }
+    .setting-row-info .s-value { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .setting-row-arrow { color: var(--text-muted); font-size: 14px; }
+
+    /* ── LOADING ── */
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(200,150,90,0.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text { font-size: 14px; color: var(--text-muted); }
+
+    /* ── NOTIFICATION BANNER ── */
+    .notification-banner {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-120%);
+      width: calc(100% - 32px);
+      max-width: 400px;
+      background: var(--navy);
+      border: 1px solid var(--gold);
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 200;
+      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .notification-banner.show { transform: translateX(-50%) translateY(0); }
+    .notif-icon { font-size: 24px; }
+    .notif-text .notif-title { font-size: 14px; font-weight: 600; color: var(--gold-light); }
+    .notif-text .notif-body { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── GLOBAL ALARM STATUS ── */
+    .global-alarm-status {
+      margin: 0 16px 20px;
+      background: rgba(30,107,107,0.15);
+      border: 1px solid rgba(30,107,107,0.4);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--teal-light);
+    }
+
+    .alarm-active-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--teal-light);
+      animation: pulse-dot 1.5s ease infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    select {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--prayer-border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    select option { background: var(--navy); }
+
+    @media (max-height: 700px) {
+      header { padding: 24px 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Notification Banner -->
+<div class="notification-banner" id="notifBanner">
+  <span class="notif-icon" id="notifIcon">🔔</span>
+  <div class="notif-text">
+    <div class="notif-title" id="notifTitle">Prayer Time</div>
+    <div class="notif-body" id="notifBody">It's time to pray</div>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- ── HOME VIEW ── -->
+  <div class="view active" id="homeView">
+
+    <header>
+      <div class="crescent">
+        <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M30 5C16.2 5 5 16.2 5 30s11.2 25 25 25c3.5 0 6.8-.7 9.8-2-8.5-3.2-14.5-11.3-14.5-20.8C25.3 21.7 31.8 13.9 40.5 11c-3.2-3.9-8-6-10.5-6z" fill="url(#moonGrad)" />
+          <defs>
+            <linearGradient id="moonGrad" x1="5" y1="5" x2="55" y2="55" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#e8b87a"/>
+              <stop offset="1" stop-color="#c8965a"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <h1>Mawaqit <span>مواقيت الصلاة</span></h1>
+      <div class="hijri-date" id="hijriDate">Loading date…</div>
+    </header>
+
+    <!-- Location Bar -->
+    <div class="location-bar" id="locationBar" onclick="openLocationModal()">
+      <div class="location-icon">📍</div>
+      <div class="location-info">
+        <div class="city" id="locationCity">Tap to set your city</div>
+        <div class="coords" id="locationCoords">Select a city to load prayer times</div>
+      </div>
+      <div class="location-change">Change →</div>
+    </div>
+
+    <!-- Global Alarm Status -->
+    <div class="global-alarm-status" id="globalAlarmStatus" style="display:none">
+      <div class="alarm-active-dot"></div>
+      <span id="globalAlarmText">Alarms active for all prayers</span>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" id="loadingState">
+      <div class="spinner"></div>
+      <div class="loading-text">Enter a city to see prayer times</div>
+    </div>
+
+    <!-- Next Prayer Card -->
+    <div class="next-prayer-card" id="nextPrayerCard" style="display:none">
+      <div class="npc-label">Next Prayer</div>
+      <div class="npc-name" id="nextPrayerName">—</div>
+      <div class="npc-arabic" id="nextPrayerArabic">—</div>
+      <div class="npc-countdown">
+        <div class="countdown-time" id="countdownTime">—</div>
+        <div class="countdown-label">remaining</div>
+      </div>
+      <div class="npc-actual">At <span id="nextPrayerAt">—</span></div>
+    </div>
+
+    <!-- Prayer List -->
+    <div class="prayers-section" id="prayersSection" style="display:none">
+      <div class="section-title">Today's Prayers</div>
+      <div id="prayerList"></div>
+    </div>
+
+  </div>
+
+  <!-- ── SETTINGS VIEW ── -->
+  <div class="view" id="settingsView">
+    <header style="text-align:left; padding: 48px 24px 20px">
+      <h1 style="font-size:24px">Settings</h1>
+    </header>
+
+    <div class="settings-section">
+      <div class="settings-title">Alarm Default</div>
+      <div class="settings-card">
+        <div class="setting-row" onclick="openGlobalAlarmSettings()">
+          <div class="setting-row-info">
+            <div class="s-label">Default Alert Timing</div>
+            <div class="s-value" id="defaultAlarmDisplay">5 min before + on time</div>
+          </div>
+          <div class="setting-row-arrow">›</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-info">
+            <div class="s-label">Enable All Alarms</div>
+            <div class="s-value">Sound for all 5 prayers</div>
+          </div>
+          <button class="toggle" id="globalAlarmToggle" onclick="toggleGlobalAlarm(this)"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Calculation Method</div>
+      <div class="settings-card">
+        <div class="setting-row" style="flex-direction:column; align-items:flex-start; cursor:default">
+          <div class="setting-row-info">
+            <div class="s-label">Juristic Method</div>
+          </div>
+          <select id="methodSelect" onchange="saveMethod()">
+            <option value="4">Umm Al-Qura (Saudi Arabia)</option>
+            <option value="2">Islamic Society of North America</option>
+            <option value="1">Muslim World League</option>
+            <option value="3">Egyptian General Authority</option>
+            <option value="5">University of Islamic Sciences, Karachi</option>
+          </select>
+        </div>
+        <div class="setting-row" style="flex-direction:column; align-items:flex-start; cursor:default">
+          <div class="setting-row-info">
+            <div class="s-label">Asr Juristic School</div>
+          </div>
+          <select id="schoolSelect" onchange="saveMethod()">
+            <option value="0">Standard (Shafi, Maliki, Hanbali)</option>
+            <option value="1">Hanafi</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">About</div>
+      <div class="settings-card">
+        <div class="setting-row" style="cursor:default">
+          <div class="setting-row-info">
+            <div class="s-label">Mawaqit v1.0</div>
+            <div class="s-value">Powered by Aladhan API · Free & Open</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="switchView('home')">
+    <div class="nav-icon">🕌</div>
+    <div class="nav-label">Prayer Times</div>
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="switchView('settings')">
+    <div class="nav-icon">⚙️</div>
+    <div class="nav-label">Settings</div>
+  </div>
+</nav>
+
+<!-- Location Search Modal -->
+<div class="modal-overlay" id="locationModal">
+  <div class="modal">
+    <h2>🌍 Find Your City</h2>
+    <div class="search-input-wrap">
+      <input type="text" id="citySearchInput" placeholder="e.g. Doha, Cairo, London…" autocomplete="off" onkeyup="handleSearchKey(event)" />
+      <button class="search-btn" onclick="searchCity()">🔍</button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeLocationModal()">Cancel</button>
+      <button class="btn-primary" onclick="useGPS()">📡 Use My Location</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alarm Settings Panel -->
+<div class="alarm-panel" id="alarmPanel">
+  <div class="panel-handle"></div>
+  <div class="panel-title" id="alarmPanelTitle">Fajr Alarm</div>
+  <div class="panel-subtitle" id="alarmPanelSubtitle">Set reminder timing</div>
+
+  <div class="alarm-toggle-row">
+    <div class="toggle-info">
+      <div class="toggle-label">Enable Alarm</div>
+      <div class="toggle-desc">Sound alert for this prayer</div>
+    </div>
+    <button class="toggle" id="prayerAlarmToggle" onclick="togglePrayerAlarm(this)"></button>
+  </div>
+
+  <div class="minutes-row">
+    <div class="minutes-label">Alert me before prayer time:</div>
+    <div class="minutes-options" id="minuteChips">
+      <button class="min-chip" onclick="selectMinutes(0, this)">On time</button>
+      <button class="min-chip" onclick="selectMinutes(5, this)">5 min</button>
+      <button class="min-chip" onclick="selectMinutes(10, this)">10 min</button>
+      <button class="min-chip" onclick="selectMinutes(15, this)">15 min</button>
+      <button class="min-chip" onclick="selectMinutes(20, this)">20 min</button>
+      <button class="min-chip" onclick="selectMinutes(30, this)">30 min</button>
+    </div>
+    <div class="custom-min-wrap">
+      <input type="number" id="customMinInput" min="0" max="120" placeholder="0" />
+      <span>custom minutes</span>
+    </div>
+  </div>
+
+  <div class="alarm-toggle-row">
+    <div class="toggle-info">
+      <div class="toggle-label">Also alert on exact time</div>
+      <div class="toggle-desc">Ring at the actual prayer time too</div>
+    </div>
+    <button class="toggle" id="onTimeToggle" onclick="toggleOnTime(this)"></button>
+  </div>
+
+  <div class="panel-actions">
+    <button class="btn-secondary" onclick="closeAlarmPanel()">Cancel</button>
+    <button class="btn-primary" onclick="savePrayerAlarm()">Save Alarm</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  CONSTANTS & STATE
+// ═══════════════════════════════════════════════
+const PRAYERS = [
+  { key: 'Fajr',    en: 'Fajr',    ar: 'الفجر',    icon: '🌙' },
+  { key: 'Sunrise', en: 'Sunrise', ar: 'الشروق',   icon: '🌅', noAlarm: true },
+  { key: 'Dhuhr',   en: 'Dhuhr',   ar: 'الظهر',    icon: '☀️' },
+  { key: 'Asr',     en: 'Asr',     ar: 'العصر',    icon: '🌤' },
+  { key: 'Maghrib', en: 'Maghrib', ar: 'المغرب',   icon: '🌇' },
+  { key: 'Isha',    en: 'Isha',    ar: 'العشاء',   icon: '🌙' },
+];
+
+let state = {
+  city: null,
+  country: null,
+  lat: null,
+  lng: null,
+  times: null,         // { Fajr: '05:12', ... }
+  timesDate: null,     // YYYY-MM-DD
+  alarms: {},          // { Fajr: { enabled, minutesBefore, onTime }, ... }
+  globalAlarm: false,
+  defaultMinutes: 5,
+  defaultOnTime: true,
+  method: '4',
+  school: '0',
+  currentEditingPrayer: null,
+};
+
+// Scheduled alarm timeout IDs
+let scheduledAlarms = {};
+let countdownInterval = null;
+
+// ═══════════════════════════════════════════════
+//  PERSISTENCE
+// ═══════════════════════════════════════════════
+function saveState() {
+  localStorage.setItem('mawaqit_state', JSON.stringify({
+    city: state.city,
+    country: state.country,
+    lat: state.lat,
+    lng: state.lng,
+    alarms: state.alarms,
+    globalAlarm: state.globalAlarm,
+    defaultMinutes: state.defaultMinutes,
+    defaultOnTime: state.defaultOnTime,
+    method: state.method,
+    school: state.school,
+  }));
+}
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('mawaqit_state') || '{}');
+    Object.assign(state, saved);
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+async function init() {
+  loadState();
+  applySettingsUI();
+  updateGlobalAlarmStatus();
+
+  if (state.lat && state.lng) {
+    await fetchPrayerTimes();
+  }
+
+  // Refresh at midnight
+  scheduleNextDayRefresh();
+
+  // Request notification permission
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function applySettingsUI() {
+  document.getElementById('methodSelect').value = state.method;
+  document.getElementById('schoolSelect').value = state.school;
+  document.getElementById('defaultAlarmDisplay').textContent =
+    state.defaultMinutes === 0
+      ? 'On time only'
+      : `${state.defaultMinutes} min before${state.defaultOnTime ? ' + on time' : ''}`;
+
+  const gt = document.getElementById('globalAlarmToggle');
+  if (state.globalAlarm) gt.classList.add('on'); else gt.classList.remove('on');
+}
+
+// ═══════════════════════════════════════════════
+//  LOCATION & SEARCH
+// ═══════════════════════════════════════════════
+function openLocationModal() {
+  document.getElementById('locationModal').classList.add('open');
+  setTimeout(() => document.getElementById('citySearchInput').focus(), 300);
+}
+
+function closeLocationModal() {
+  document.getElementById('locationModal').classList.remove('open');
+  document.getElementById('searchResults').innerHTML = '';
+  document.getElementById('citySearchInput').value = '';
+}
+
+function handleSearchKey(e) {
+  if (e.key === 'Enter') searchCity();
+}
+
+async function searchCity() {
+  const q = document.getElementById('citySearchInput').value.trim();
+  if (!q) return;
+
+  const res = document.getElementById('searchResults');
+  res.innerHTML = '<div style="padding:12px;color:var(--text-muted);font-size:13px">Searching…</div>';
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&addressdetails=1`;
+    const r = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    const data = await r.json();
+
+    if (!data.length) {
+      res.innerHTML = '<div style="padding:12px;color:var(--text-muted);font-size:13px">No results found. Try another city name.</div>';
+      return;
+    }
+
+    res.innerHTML = data.map((item, i) => {
+      const city = item.address.city || item.address.town || item.address.village || item.display_name.split(',')[0];
+      const country = item.address.country || '';
+      return `<div class="search-result-item" onclick="selectCity('${city.replace(/'/g,"\\'")}', '${country.replace(/'/g,"\\'")}', ${item.lat}, ${item.lon})">
+        <div class="r-city">${city}</div>
+        <div class="r-country">${country}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    res.innerHTML = '<div style="padding:12px;color:var(--text-muted);font-size:13px">Error searching. Check your connection.</div>';
+  }
+}
+
+async function selectCity(city, country, lat, lng) {
+  state.city = city;
+  state.country = country;
+  state.lat = parseFloat(lat);
+  state.lng = parseFloat(lng);
+  saveState();
+  closeLocationModal();
+  await fetchPrayerTimes();
+}
+
+async function useGPS() {
+  closeLocationModal();
+  document.getElementById('loadingState').style.display = 'flex';
+  document.getElementById('loadingState').querySelector('.loading-text').textContent = 'Getting your location…';
+
+  try {
+    const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000 }));
+    state.lat = pos.coords.latitude;
+    state.lng = pos.coords.longitude;
+
+    // Reverse geocode
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${state.lat}&lon=${state.lng}&format=json`, { headers: { 'Accept-Language': 'en' } });
+    const data = await r.json();
+    state.city = data.address.city || data.address.town || data.address.village || 'Your Location';
+    state.country = data.address.country || '';
+    saveState();
+    await fetchPrayerTimes();
+  } catch(e) {
+    document.getElementById('loadingState').querySelector('.loading-text').textContent = 'Could not get location. Please search manually.';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  PRAYER TIMES API
+// ═══════════════════════════════════════════════
+async function fetchPrayerTimes() {
+  document.getElementById('loadingState').style.display = 'flex';
+  document.getElementById('loadingState').querySelector('.loading-text').textContent = 'Loading prayer times…';
+  document.getElementById('nextPrayerCard').style.display = 'none';
+  document.getElementById('prayersSection').style.display = 'none';
+
+  const today = new Date();
+  const dd = String(today.getDate()).padStart(2, '0');
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const yyyy = today.getFullYear();
+  const dateStr = `${dd}-${mm}-${yyyy}`;
+
+  try {
+    const url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${state.lat}&longitude=${state.lng}&method=${state.method}&school=${state.school}`;
+    const r = await fetch(url);
+    const data = await r.json();
+
+    if (data.code !== 200) throw new Error('API error');
+
+    const timings = data.data.timings;
+    const hijri = data.data.date.hijri;
+
+    state.times = {
+      Fajr:    timings.Fajr,
+      Sunrise: timings.Sunrise,
+      Dhuhr:   timings.Dhuhr,
+      Asr:     timings.Asr,
+      Maghrib: timings.Maghrib,
+      Isha:    timings.Isha,
+    };
+
+    state.timesDate = `${yyyy}-${mm}-${dd}`;
+
+    // Hijri date
+    document.getElementById('hijriDate').textContent =
+      `${hijri.day} ${hijri.month.en} ${hijri.year} AH`;
+
+    // Location display
+    document.getElementById('locationCity').textContent = `${state.city}${state.country ? ', ' + state.country : ''}`;
+    document.getElementById('locationCoords').textContent = `${state.lat.toFixed(4)}° N, ${state.lng.toFixed(4)}° E`;
+
+    saveState();
+    renderPrayers();
+    scheduleAllAlarms();
+    startCountdown();
+
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('nextPrayerCard').style.display = 'block';
+    document.getElementById('prayersSection').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('loadingState').querySelector('.loading-text').textContent = 'Failed to load prayer times. Check your connection.';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER PRAYERS
+// ═══════════════════════════════════════════════
+function renderPrayers() {
+  if (!state.times) return;
+  const now = new Date();
+  const list = document.getElementById('prayerList');
+  const nextIdx = getNextPrayerIndex(now);
+
+  list.innerHTML = PRAYERS.map((p, i) => {
+    const timeStr = state.times[p.key];
+    const pDate = prayerDateTime(timeStr);
+    const isPassed = pDate < now;
+    const isActive = i === nextIdx;
+    const alarm = state.alarms[p.key];
+    const alarmArmed = alarm && alarm.enabled;
+
+    return `<div class="prayer-card ${isActive ? 'active' : ''} ${isPassed && !isActive ? 'passed' : ''}">
+      <div class="prayer-dot"></div>
+      <div class="prayer-names">
+        <div class="prayer-name-en">${p.icon} ${p.en}</div>
+        <div class="prayer-name-ar">${p.ar}</div>
+      </div>
+      <div class="prayer-time-col">
+        <div class="prayer-time">${formatTime(timeStr)}</div>
+      </div>
+      ${p.noAlarm ? '<div style="width:34px"></div>' : `<button class="alarm-btn ${alarmArmed ? 'armed' : ''}" onclick="openAlarmPanel('${p.key}')" title="Set alarm">🔔</button>`}
+    </div>`;
+  }).join('');
+
+  updateNextPrayerCard(now, nextIdx);
+}
+
+function formatTime(t) {
+  // Convert 24h "05:12" to 12h "5:12 AM"
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function prayerDateTime(timeStr) {
+  const now = new Date();
+  const [h, m] = timeStr.split(':').map(Number);
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
+}
+
+function getNextPrayerIndex(now) {
+  for (let i = 0; i < PRAYERS.length; i++) {
+    const t = prayerDateTime(state.times[PRAYERS[i].key]);
+    if (t > now) return i;
+  }
+  return 0; // Wraps to Fajr next day
+}
+
+function updateNextPrayerCard(now, nextIdx) {
+  const p = PRAYERS[nextIdx];
+  const t = prayerDateTime(state.times[p.key]);
+
+  document.getElementById('nextPrayerName').textContent = p.en;
+  document.getElementById('nextPrayerArabic').textContent = p.ar;
+  document.getElementById('nextPrayerAt').textContent = formatTime(state.times[p.key]);
+}
+
+// ═══════════════════════════════════════════════
+//  COUNTDOWN
+// ═══════════════════════════════════════════════
+function startCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  updateCountdown();
+  countdownInterval = setInterval(updateCountdown, 1000);
+}
+
+function updateCountdown() {
+  if (!state.times) return;
+  const now = new Date();
+  const nextIdx = getNextPrayerIndex(now);
+  let t = prayerDateTime(state.times[PRAYERS[nextIdx].key]);
+
+  // If all passed today, next is Fajr tomorrow
+  if (t <= now) {
+    t = new Date(t.getTime() + 24 * 60 * 60 * 1000);
+  }
+
+  const diff = Math.max(0, t - now);
+  const hh = Math.floor(diff / 3600000);
+  const mm = Math.floor((diff % 3600000) / 60000);
+  const ss = Math.floor((diff % 60000) / 1000);
+
+  document.getElementById('countdownTime').textContent =
+    hh > 0
+      ? `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`
+      : `${mm}:${String(ss).padStart(2,'0')}`;
+
+  // Re-render prayer list every minute to update active state
+  if (ss === 0) renderPrayers();
+}
+
+// ═══════════════════════════════════════════════
+//  ALARM PANEL
+// ═══════════════════════════════════════════════
+function openAlarmPanel(prayerKey) {
+  state.currentEditingPrayer = prayerKey;
+  const p = PRAYERS.find(x => x.key === prayerKey);
+  const alarm = state.alarms[prayerKey] || { enabled: false, minutesBefore: state.defaultMinutes, onTime: state.defaultOnTime };
+
+  document.getElementById('alarmPanelTitle').textContent = `${p.icon} ${p.en} Alarm`;
+  document.getElementById('alarmPanelSubtitle').textContent = `Prayer time: ${formatTime(state.times[prayerKey])}`;
+
+  const toggle = document.getElementById('prayerAlarmToggle');
+  if (alarm.enabled) toggle.classList.add('on'); else toggle.classList.remove('on');
+
+  const onTimeToggle = document.getElementById('onTimeToggle');
+  if (alarm.onTime !== false) onTimeToggle.classList.add('on'); else onTimeToggle.classList.remove('on');
+
+  // Select matching chip
+  document.querySelectorAll('.min-chip').forEach(c => c.classList.remove('selected'));
+  const chips = document.querySelectorAll('.min-chip');
+  const minuteValues = [0, 5, 10, 15, 20, 30];
+  const idx = minuteValues.indexOf(alarm.minutesBefore);
+  if (idx >= 0) chips[idx].classList.add('selected');
+
+  document.getElementById('customMinInput').value = alarm.minutesBefore;
+
+  document.getElementById('alarmPanel').classList.add('open');
+}
+
+function closeAlarmPanel() {
+  document.getElementById('alarmPanel').classList.remove('open');
+  state.currentEditingPrayer = null;
+}
+
+function togglePrayerAlarm(btn) {
+  btn.classList.toggle('on');
+}
+
+function toggleOnTime(btn) {
+  btn.classList.toggle('on');
+}
+
+function selectMinutes(val, chip) {
+  document.querySelectorAll('.min-chip').forEach(c => c.classList.remove('selected'));
+  chip.classList.add('selected');
+  document.getElementById('customMinInput').value = val;
+}
+
+function savePrayerAlarm() {
+  const key = state.currentEditingPrayer;
+  if (!key) return;
+
+  const enabled = document.getElementById('prayerAlarmToggle').classList.contains('on');
+  const onTime = document.getElementById('onTimeToggle').classList.contains('on');
+  const minutesBefore = parseInt(document.getElementById('customMinInput').value) || 0;
+
+  state.alarms[key] = { enabled, minutesBefore, onTime };
+  saveState();
+  scheduleAllAlarms();
+  renderPrayers();
+  updateGlobalAlarmStatus();
+  closeAlarmPanel();
+
+  showNotificationBanner(
+    '🔔',
+    `${PRAYERS.find(p => p.key === key).en} Alarm Set`,
+    enabled
+      ? `${minutesBefore > 0 ? minutesBefore + ' min before' : ''}${onTime ? (minutesBefore > 0 ? ' + ' : '') + 'on time' : ''}`
+      : 'Alarm disabled'
+  );
+}
+
+// ═══════════════════════════════════════════════
+//  GLOBAL ALARM
+// ═══════════════════════════════════════════════
+function toggleGlobalAlarm(btn) {
+  btn.classList.toggle('on');
+  state.globalAlarm = btn.classList.contains('on');
+
+  if (state.globalAlarm) {
+    // Enable default alarm for all prayers
+    PRAYERS.filter(p => !p.noAlarm).forEach(p => {
+      state.alarms[p.key] = {
+        enabled: true,
+        minutesBefore: state.defaultMinutes,
+        onTime: state.defaultOnTime,
+      };
+    });
+  }
+
+  saveState();
+  scheduleAllAlarms();
+  renderPrayers();
+  updateGlobalAlarmStatus();
+}
+
+function updateGlobalAlarmStatus() {
+  const anyArmed = PRAYERS.filter(p => !p.noAlarm).some(p => state.alarms[p.key]?.enabled);
+  const statusEl = document.getElementById('globalAlarmStatus');
+
+  if (anyArmed) {
+    statusEl.style.display = 'flex';
+    const count = PRAYERS.filter(p => !p.noAlarm && state.alarms[p.key]?.enabled).length;
+    document.getElementById('globalAlarmText').textContent =
+      `${count} prayer alarm${count > 1 ? 's' : ''} active today`;
+  } else {
+    statusEl.style.display = 'none';
+  }
+}
+
+function openGlobalAlarmSettings() {
+  // Reuse alarm panel for global settings
+  // Simple: open a prompt
+  const min = prompt('Default minutes before prayer (0 = on time only):', state.defaultMinutes);
+  if (min !== null) {
+    state.defaultMinutes = Math.max(0, parseInt(min) || 0);
+    state.defaultOnTime = true;
+    document.getElementById('defaultAlarmDisplay').textContent =
+      state.defaultMinutes === 0
+        ? 'On time only'
+        : `${state.defaultMinutes} min before + on time`;
+    saveState();
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  ALARM SCHEDULING
+// ═══════════════════════════════════════════════
+function scheduleAllAlarms() {
+  // Clear existing
+  Object.values(scheduledAlarms).forEach(ids => ids.forEach(id => clearTimeout(id)));
+  scheduledAlarms = {};
+
+  if (!state.times) return;
+
+  PRAYERS.forEach(p => {
+    if (p.noAlarm) return;
+    const alarm = state.alarms[p.key];
+    if (!alarm || !alarm.enabled) return;
+
+    const ids = [];
+    const pTime = prayerDateTime(state.times[p.key]);
+    const now = new Date();
+
+    // Before alarm
+    if (alarm.minutesBefore > 0) {
+      const beforeTime = new Date(pTime.getTime() - alarm.minutesBefore * 60000);
+      const delay = beforeTime - now;
+      if (delay > 0) {
+        ids.push(setTimeout(() => fireAlarm(p, 'before', alarm.minutesBefore), delay));
+      }
+    }
+
+    // On time alarm
+    if (alarm.onTime) {
+      const delay = pTime - now;
+      if (delay > 0) {
+        ids.push(setTimeout(() => fireAlarm(p, 'ontime', 0), delay));
+      }
+    }
+
+    scheduledAlarms[p.key] = ids;
+  });
+}
+
+function fireAlarm(prayer, type, minutesBefore) {
+  const title = type === 'before'
+    ? `${prayer.en} in ${minutesBefore} minutes`
+    : `${prayer.en} — Time to Pray`;
+
+  const body = type === 'before'
+    ? `${prayer.ar} prayer begins in ${minutesBefore} minutes`
+    : `It's time for ${prayer.ar} prayer`;
+
+  // Show in-app banner
+  showNotificationBanner('🔔', title, body);
+
+  // Web Notification
+  if (Notification.permission === 'granted') {
+    new Notification(title, {
+      body,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      tag: prayer.key,
+    });
+  }
+
+  // Play sound
+  playAlarmSound();
+}
+
+function playAlarmSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const frequencies = [880, 1100, 880, 660];
+    let time = ctx.currentTime;
+
+    frequencies.forEach(freq => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(0.3, time + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+
+      osc.start(time);
+      osc.stop(time + 0.5);
+
+      time += 0.55;
+    });
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════
+//  NOTIFICATION BANNER
+// ═══════════════════════════════════════════════
+let bannerTimeout = null;
+
+function showNotificationBanner(icon, title, body) {
+  document.getElementById('notifIcon').textContent = icon;
+  document.getElementById('notifTitle').textContent = title;
+  document.getElementById('notifBody').textContent = body;
+
+  const banner = document.getElementById('notifBanner');
+  banner.classList.add('show');
+
+  if (bannerTimeout) clearTimeout(bannerTimeout);
+  bannerTimeout = setTimeout(() => banner.classList.remove('show'), 4000);
+}
+
+// ═══════════════════════════════════════════════
+//  NAV
+// ═══════════════════════════════════════════════
+function switchView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  document.getElementById(view + 'View').classList.add('active');
+  document.getElementById('nav-' + view).classList.add('active');
+
+  if (view === 'settings') applySettingsUI();
+}
+
+// ═══════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════
+function saveMethod() {
+  state.method = document.getElementById('methodSelect').value;
+  state.school = document.getElementById('schoolSelect').value;
+  saveState();
+  if (state.lat) fetchPrayerTimes();
+}
+
+// ═══════════════════════════════════════════════
+//  MIDNIGHT REFRESH
+// ═══════════════════════════════════════════════
+function scheduleNextDayRefresh() {
+  const now = new Date();
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 1, 0);
+  const delay = tomorrow - now;
+  setTimeout(() => {
+    if (state.lat) fetchPrayerTimes();
+    scheduleNextDayRefresh();
+  }, delay);
+}
+
+// ═══════════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
